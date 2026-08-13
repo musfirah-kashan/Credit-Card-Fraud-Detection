@@ -4,12 +4,13 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split,GridSearchCV
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegression,SGDClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier,GradientBoostingClassifier
+from sklearn.ensemble import RandomForestClassifier,HistGradientBoostingClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.metrics import accuracy_score,precision_score,recall_score,f1_score,confusion_matrix,classification_report,roc_auc_score,roc_curve
+import joblib
 
 df=pd.read_csv('creditcard.csv')
 # print(df.columns.tolist())
@@ -35,28 +36,73 @@ X_train,X_test,y_train,y_test=train_test_split(X,y,random_state=42,test_size=0.2
 
 models={
     "LogisticRegression":{
-        "model":LogisticRegression(class_weight='balanced',max_iter=1000),
+        "model":LogisticRegression(class_weight='balanced',max_iter=1000,n_jobs=-1,solver='lbfgs'),
         "params":{'C':[0.01,0.1,1,10]}
     }, 
-    "KNN":{
-        "model":KNeighborsClassifier(weights='distance'),
-        "params":{'n_neighbours':[3,5,7]}
+    "SGD":{
+        "model":SGDClassifier(loss='log_loss',class_weight='balanced',random_state=42),
+        "params":{'alpha':[0.0001,0.001]}
     },
     "DecisionTree":{
         "model":DecisionTreeClassifier(class_weight='balanced',random_state=42),
         "params":{'max_depth':[5,10,15],'min_samples_split':[2,10]}
     },
     "RandomForest":{
-        "model":RandomForestClassifier(class_weight='balanced',random_state=42),
+        "model":RandomForestClassifier(class_weight='balanced',random_state=42, n_jobs=-1),
         "params":{'n_estimators':[100,200],'max_depth':[8,12]}
     },
-    "GradientBoosting":{
-        "model":GradientBoostingClassifier(random_state=42),
-        "params":{'n_estimators':[100,150],'learning_rate':[0.05,0.1],'max_depth':[3,5]}
+     "HistGradientBoosting":{
+        "model":HistGradientBoostingClassifier(random_state=42),
+        "params":{'max_iter':[100],'learning_rate':[0.05,0.1]}
     },
     "NaiveBayes":{
         "model":GaussianNB(),
-        "params":{'var_smoothing':[1e9,1e8]}
+        "params":{'var_smoothing':[1e-9,1e-8]}
     }
 }
+
+res=[]
+for name,config in models.items():
+    print(f"\nTraining {name}")
+    grid=GridSearchCV(config['model'],config['params'],cv=3,scoring='f1',n_jobs=-1)
+    grid.fit(X_train,y_train)
+    best_model=grid.best_estimator_
+    print(best_model)
+    y_pred=best_model.predict(X_test)
+    y_proba=best_model.predict_proba(X_test)[:,1]
+    acc=accuracy_score(y_test,y_pred)
+    precision=precision_score(y_test,y_pred)
+    recall=recall_score(y_test,y_pred)
+    f1=f1_score(y_test,y_pred)
+    roc_auc=roc_auc_score(y_test,y_proba)
+    print(f"Accuracy: {acc:.4f} | Precision: {precision:.4f} | Recall: {recall:.4f} | F1: {f1:.4f} | ROC-AUC: {roc_auc:.4f}")
+    print(classification_report(y_test,y_pred,target_names=['Not Fraud','Fraud']))
+    res.append({
+        'model':name,
+        'best_params':grid.best_params_,
+        'accuracy':acc,
+        'precision':precision,
+        'recall':recall,
+        'f1':f1,
+        'roc_auc':roc_auc
+    })
+print(res)
+res_df=pd.DataFrame(res)
+print(res_df)
+
+best_row=res_df.sort_values(by='f1',ascending=False).iloc[0]
+print(best_row)
+best_model_name=best_row['model']
+print(best_model_name)
+best_model_config=models[best_model_name]
+print(best_model_config)
+final_model=best_model_config['model'].set_params(**best_row['best_params'])
+print(final_model)
+final_model.fit(X,y)
+ 
+joblib.dump(final_model,"models/best_model.pkl")
+joblib.dump(standard,"models/scaler.pkl")
+predictions=joblib.load('models/best_model.pkl').predict(X_test)
+print(predictions)
+
 
