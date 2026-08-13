@@ -77,6 +77,15 @@ for name,config in models.items():
     roc_auc=roc_auc_score(y_test,y_proba)
     print(f"Accuracy: {acc:.4f} | Precision: {precision:.4f} | Recall: {recall:.4f} | F1: {f1:.4f} | ROC-AUC: {roc_auc:.4f}")
     print(classification_report(y_test,y_pred,target_names=['Not Fraud','Fraud']))
+
+    cm=confusion_matrix(y_test,y_pred)
+    plt.figure()
+    sns.heatmap(cm,annot=True,fmt='d',cmap='Blues',xticklabels=['Not Fraud','Fraud'],yticklabels=['Not Fraud','Fraud'])
+    plt.title(f'Confusion Matrix - {name}')
+    plt.ylabel('Actual')
+    plt.xlabel('Predicted')
+    plt.show()
+
     res.append({
         'model':name,
         'best_params':grid.best_params_,
@@ -89,6 +98,16 @@ for name,config in models.items():
 print(res)
 res_df=pd.DataFrame(res)
 print(res_df)
+
+res_df.to_csv("models/results.csv",index=False)
+ 
+plt.figure(figsize=(10,5))
+plt.bar(res_df['model'],res_df['f1'])
+plt.title('F1 Score Comparison')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+ 
 
 best_row=res_df.sort_values(by='f1',ascending=False).iloc[0]
 print(best_row)
@@ -104,5 +123,6 @@ joblib.dump(final_model,"models/best_model.pkl")
 joblib.dump(standard,"models/scaler.pkl")
 predictions=joblib.load('models/best_model.pkl').predict(X_test)
 print(predictions)
+
 
 
