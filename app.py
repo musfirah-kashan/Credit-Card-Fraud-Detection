@@ -150,7 +150,7 @@ elif page=="🔍 Single Prediction":
  
     if st.session_state.loaded_row is not None:
         row=st.session_state.loaded_row
-        st.info(f"Loaded a real transaction from the dataset (actual label: {'Fraud' if row['Class']==1 else 'Not Fraud'}). Click Check Transaction below to see if the model agrees.")
+        st.info(f"This is a real transaction from the dataset — it's actually labeled {'Fraud' if row['Class']==1 else 'Not Fraud'}. Click below to see what the model predicts.")
  
         proof_df=pd.DataFrame({
             'Feature':['Amount_scaled','Time_scaled']+top_features,
