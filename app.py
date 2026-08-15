@@ -135,7 +135,6 @@ elif page=="🔍 Single Prediction":
     st.markdown("<br>",unsafe_allow_html=True)
  
     st.markdown("#### Try a Real Example")
-    st.caption("Load an actual transaction from the dataset instead of guessing values — guaranteed to show correct model behavior.")
     b1,b2,b3=st.columns(3)
     with b1:
         if st.button('🚨 Load Real Fraud Example',use_container_width=True):
@@ -300,31 +299,58 @@ elif page=="📊 Model Performance":
  
 elif page=="👤 About Me":
     st.markdown("## 👤 About Me")
-    st.markdown("<br>",unsafe_allow_html=True)
- 
-    col1,col2=st.columns([1,3])
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("""
+    <style>
+        .profile-pic-container img {
+            border-radius: 50% !important;
+            object-fit: cover !important;
+            aspect-ratio: 1 / 1 !important;
+            border: 3px solid #2575fc;
+            width: 160px !important;
+            height: 160px !important;
+        }
+        
+        div[data-testid="column"] {
+            padding: 0px !important;
+        }
+        .profile-card {
+            background-color: #1a1f2e;
+            border: 1px solid #2a3040;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-left: -20px; /* Pulls the card directly closer to the picture */
+        }
+    </style>
+    """, unsafe_allow_html=True)
+    col1, col2 = st.columns([1, 5])
     with col1:
+        st.markdown('<div class="profile-pic-container">', unsafe_allow_html=True)
         try:
-            st.image("images/profile.jpg",width=200)
+            st.image("images/profile.jpg")
         except Exception:
-            st.warning("Add a photo named 'profile.jpg' to your project folder to show it here.")
+            st.warning("Add profile.jpg")
+        st.markdown('</div>', unsafe_allow_html=True)
+
     with col2:
         st.markdown("""
-        <div class="card">
-            <h3>Musfirah Kashan</h3>
-            <p>Aspiring Data Scientist</p>
-            <p>As an aspiring data scientist, I am currently developing a professional portfolio of end-to-end projects—ranging from exploratory data analysis to production-ready machine learning pipelines and fully deployed applications.</p>
+        <div class="profile-card">
+            <h3 style="margin-top:0;">Musfirah Kashan</h3>
+            <p style="color:#2575fc; font-weight:600;">Aspiring Data Scientist</p>
+            <p style="margin-bottom:0;">As an aspiring data scientist, I am currently developing a professional portfolio of end-to-end projects—ranging from exploratory data analysis to production-ready machine learning pipelines and fully deployed applications.</p>
         </div>
-        """,unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
  
-    c1,c2=st.columns(2)
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    c1, c2 = st.columns(2)
     with c1:
         st.markdown("""
         <div class="card">
             <h4>🛠️ Skills</h4>
             <p>Python, Pandas, NumPy, Scikit-learn, Streamlit, Matplotlib, Seaborn, Data Analysis, Data Visualization, Machine Learning</p>
         </div>
-        """,unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
     with c2:
         st.markdown("""
         <div class="card">
@@ -336,7 +362,7 @@ elif page=="👤 About Me":
             🛡️ Credit Card Fraud Detection (Classification) — this project
             </p>
         </div>
-        """,unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
  
     st.markdown("""
     <div class="card">
@@ -345,4 +371,4 @@ elif page=="👤 About Me":
         LinkedIn: <a href="https://www.linkedin.com/in/musfirah-kashan-487aa626a/" style="color:#2575fc;">https://www.linkedin.com/in/musfirah-kashan-487aa626a/</a><br>
         Email: musfirah22feb@gmail.com</p>
     </div>
-    """,unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
