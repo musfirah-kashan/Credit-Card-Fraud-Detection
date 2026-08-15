@@ -24,9 +24,10 @@ sns.countplot(x='Class', data=df)
 plt.title('Class Distribution (0 = Not Fraud, 1 = Fraud)')
 plt.show()
 
-standard=StandardScaler()
-df['Amount_scaled']=standard.fit_transform(df[['Amount']])
-df['Time_scaled']=standard.fit_transform(df[['Time']])
+scaler_amount=StandardScaler()
+scaler_time=StandardScaler()
+df['Amount_scaled']=scaler_amount.fit_transform(df[['Amount']])
+df['Time_scaled']=scaler_time.fit_transform(df[['Time']])
 df=df.drop(['Amount','Time'],axis=1)
 # print(df.columns.tolist())
 
@@ -122,7 +123,8 @@ print(final_model)
 final_model.fit(X,y)
  
 joblib.dump(final_model,"models/best_model.pkl")
-joblib.dump(standard,"models/scaler.pkl")
+joblib.dump(scaler_amount,"models/scaler_amount.pkl")
+joblib.dump(scaler_time,"models/scaler_time.pkl")
 feature_names=X.columns.tolist()
 if hasattr(final_model,'feature_importances_'):
     importance=final_model.feature_importances_
@@ -141,9 +143,10 @@ fraud_samples=df[df['Class']==1].sample(5,random_state=42)
 safe_samples=df[df['Class']==0].sample(5,random_state=42)
 samples=pd.concat([fraud_samples,safe_samples])
 samples.to_csv("models/sample_transactions.csv",index=False)
- 
+
 predictions=joblib.load('models/best_model.pkl').predict(X_test)
 print(predictions)
+
 
 
 

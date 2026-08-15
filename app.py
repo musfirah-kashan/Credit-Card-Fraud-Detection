@@ -62,11 +62,15 @@ st.markdown("""
 </style>
 """,unsafe_allow_html=True)
 model=joblib.load('models/best_model.pkl')
-scaler=joblib.load('models/scaler.pkl')
+scaler_amount=joblib.load('models/scaler_amount.pkl')
+scaler_time=joblib.load('models/scaler_time.pkl')
 results=pd.read_csv('models/results.csv')
 importance_df=pd.read_csv('models/feature_importance.csv')
+samples=pd.read_csv('models/sample_transactions.csv')
 top_features=importance_df[~importance_df['feature'].isin(['Amount_scaled','Time_scaled'])].head(5)['feature'].tolist()
 
+if 'loaded_row' not in st.session_state:
+    st.session_state.loaded_row=None
 
 st.sidebar.markdown("## 🛡️ Fraud Shield")
 st.sidebar.caption("ML-powered transaction risk detection")
@@ -149,6 +153,13 @@ elif page=="🔍 Single Prediction":
         row=st.session_state.loaded_row
         st.info(f"Loaded a real transaction from the dataset (actual label: {'Fraud' if row['Class']==1 else 'Not Fraud'}). Click Check Transaction below to see if the model agrees.")
  
+        proof_df=pd.DataFrame({
+            'Feature':['Amount_scaled','Time_scaled']+top_features,
+            'Value':[round(row['Amount_scaled'],3),round(row['Time_scaled'],3)]+[round(row[f],3) for f in top_features]
+        })
+        st.markdown("**Values in this transaction (proof):**")
+        st.dataframe(proof_df,use_container_width=True,hide_index=True)
+ 
         if st.button('🚀 Check Transaction',use_container_width=True):
             input_data=np.array([row.drop('Class').values],dtype=float)
             probability=model.predict_proba(input_data)[0][1]
@@ -186,11 +197,11 @@ elif page=="🔍 Single Prediction":
         check=st.button('🚀 Check Transaction',use_container_width=True)
  
         if check:
-            amount_scaled=scaler.transform([[amount]])[0][0]
-            time_scaled=scaler.transform([[time]])[0][0]
+            amount_scaled=scaler_amount.transform([[amount]])[0][0]
+            time_scaled=scaler_time.transform([[time]])[0][0]
             v_features=[0.0]*28
             for feat,val in feature_values.items():
-                idx=int(feat.replace('V',''))-1   # V1 -> index 0, V14 -> index 13, etc
+                idx=int(feat.replace('V',''))-1   
                 v_features[idx]=val
             input_data=np.array([v_features+[amount_scaled,time_scaled]])
  
@@ -206,7 +217,7 @@ elif page=="🔍 Single Prediction":
                     st.success(f"✅ **Transaction Looks Safe** — Risk Score: {probability*100:.2f}%")
                 st.progress(min(int(probability*100),100))
             with r2:
-                st.metric("Risk Score",f"{probability*100:.1f}%") 
+                st.metric("Risk Score",f"{probability*100:.1f}%")
 elif page=="📂 Batch Prediction":
     st.markdown("## 📂 Check Many Transactions")
     st.caption("Upload a CSV with the same columns as training data (Time, V1-V28, Amount). No 'Class' column needed.")
@@ -222,10 +233,9 @@ elif page=="📂 Batch Prediction":
         run=st.button('⚡ Run Predictions on File',use_container_width=True)
  
         if run:
-            data['Amount_scaled']=scaler.transform(data[['Amount']])
-            data['Time_scaled']=scaler.transform(data[['Time']])
+            data['Amount_scaled']=scaler_amount.transform(data[['Amount']])
+            data['Time_scaled']=scaler_time.transform(data[['Time']])
             data_model=data.drop(['Amount','Time'],axis=1)
- 
             predictions=model.predict(data_model)
             probabilities=model.predict_proba(data_model)[:,1]
  
@@ -245,7 +255,6 @@ elif page=="📂 Batch Prediction":
  
             csv_download=data.to_csv(index=False).encode('utf-8')
             st.download_button("⬇️ Download Results as CSV",csv_download,"fraud_predictions.csv","text/csv",use_container_width=True)
- 
 
 elif page=="📊 Model Performance":
     st.markdown("## 📊 Model Performance Comparison")
@@ -296,15 +305,15 @@ elif page=="👤 About Me":
     col1,col2=st.columns([1,3])
     with col1:
         try:
-            st.image("profile.jpg",width=200)
+            st.image("images/profile.jpg",width=200)
         except Exception:
             st.warning("Add a photo named 'profile.jpg' to your project folder to show it here.")
     with col2:
         st.markdown("""
         <div class="card">
             <h3>Musfirah Kashan</h3>
-            <p>Data Science Student</p>
-            <p>I'm studying data science and building a portfolio of data analysis and machine learning projects — covering everything from exploratory data analysis to full ML pipelines with deployed apps.</p>
+            <p>Aspiring Data Scientist</p>
+            <p>As an aspiring data scientist, I am currently developing a professional portfolio of end-to-end projects—ranging from exploratory data analysis to production-ready machine learning pipelines and fully deployed applications.</p>
         </div>
         """,unsafe_allow_html=True)
  
