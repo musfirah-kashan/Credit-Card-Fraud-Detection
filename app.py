@@ -300,48 +300,41 @@ elif page=="📊 Model Performance":
 elif page=="👤 About Me":
     st.markdown("## 👤 About Me")
     st.markdown("<br>", unsafe_allow_html=True)
+ 
     st.markdown("""
     <style>
-        .profile-pic-container img {
-            border-radius: 50% !important;
-            object-fit: cover !important;
-            aspect-ratio: 1 / 1 !important;
-            border: 3px solid #2575fc;
-            width: 160px !important;
-            height: 160px !important;
+        .profile-container {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 2rem;
         }
-        
-        div[data-testid="column"] {
-            padding: 0px !important;
+        .profile-img {
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #2575fc;
+            flex-shrink: 0;
         }
         .profile-card {
             background-color: #1a1f2e;
             border: 1px solid #2a3040;
             border-radius: 12px;
             padding: 1.5rem;
-            margin-left: -20px; /* Pulls the card directly closer to the picture */
+            flex-grow: 1;
         }
     </style>
-    """, unsafe_allow_html=True)
-    col1, col2 = st.columns([1, 5])
-    with col1:
-        st.markdown('<div class="profile-pic-container">', unsafe_allow_html=True)
-        try:
-            st.image("images/profile.jpg")
-        except Exception:
-            st.warning("Add profile.jpg")
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    with col2:
-        st.markdown("""
+    
+    <div class="profile-container">
+        <img src="https://raw.githubusercontent.com/musfirah-kashan/Credit-Card-Fraud-Detection/main/images/profile.jpg" class="profile-img" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/musfirah-kashan/Credit-Card-Fraud-Detection/main/images/profile.jpg';">
         <div class="profile-card">
-            <h3 style="margin-top:0;">Musfirah Kashan</h3>
-            <p style="color:#2575fc; font-weight:600;">Aspiring Data Scientist</p>
-            <p style="margin-bottom:0;">As an aspiring data scientist, I am currently developing a professional portfolio of end-to-end projects—ranging from exploratory data analysis to production-ready machine learning pipelines and fully deployed applications.</p>
+            <h3 style="margin-top:0; color:white;">Musfirah Kashan</h3>
+            <p style="color:#2575fc; font-weight:600; margin-bottom:0.5rem;">Aspiring Data Scientist</p>
+            <p style="color:rgba(255,255,255,0.85); margin:0;">As an aspiring data scientist, I am currently developing a professional portfolio of end-to-end projects—ranging from exploratory data analysis to production-ready machine learning pipelines and fully deployed applications.</p>
         </div>
-        """, unsafe_allow_html=True)
- 
-    st.markdown("<br>", unsafe_allow_html=True)
+    </div>
+    """, unsafe_allow_html=True)
 
     c1, c2 = st.columns(2)
     with c1:
@@ -359,7 +352,7 @@ elif page=="👤 About Me":
             📊 Netflix Movies VS TV Shows (EDA)<br>
             🎵 Spotify Data Analysis (EDA)<br>
             🎓 Student Performance Prediction (Regression)<br>
-            🛡️ Credit Card Fraud Detection (Classification) — this project
+            🛡️ Credit Card Fraud Detection (Classification)
             </p>
         </div>
         """, unsafe_allow_html=True)
