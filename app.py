@@ -219,7 +219,7 @@ elif page=="🔍 Single Prediction":
                 st.metric("Risk Score",f"{probability*100:.1f}%")
 elif page=="📂 Batch Prediction":
     st.markdown("## 📂 Check Many Transactions")
-    st.caption(""Upload a CSV with columns Time, V1-V28, and Amount. Don't include the Class column — the model will predict it."")
+    st.caption("Upload a CSV with columns Time, V1-V28, and Amount. Don't include the Class column — the model will predict it.")
     st.markdown("<br>",unsafe_allow_html=True)
  
     file=st.file_uploader("Drag and drop a CSV file here",type=['csv'])
