@@ -8,7 +8,6 @@ warnings.filterwarnings('ignore')
 
 st.set_page_config(page_title="Fraud Shield", page_icon="🛡️", layout="wide")
  
-# ---------------- CUSTOM STYLING ----------------
 st.markdown("""
 <style>
     .main {
@@ -65,6 +64,9 @@ st.markdown("""
 model=joblib.load('models/best_model.pkl')
 scaler=joblib.load('models/scaler.pkl')
 results=pd.read_csv('models/results.csv')
+importance_df=pd.read_csv('models/feature_importance.csv')
+top_features=importance_df[~importance_df['feature'].isin(['Amount_scaled','Time_scaled'])].head(5)['feature'].tolist()
+
 
 st.sidebar.markdown("## 🛡️ Fraud Shield")
 st.sidebar.caption("ML-powered transaction risk detection")
@@ -77,7 +79,6 @@ page=st.sidebar.radio(
 st.sidebar.markdown("---")
 st.sidebar.caption("Built with Streamlit + Scikit-learn")
  
-# ---------------- HOME ----------------
 if page=="🏠 Home":
     st.markdown("""
     <div class="hero">
@@ -123,61 +124,89 @@ if page=="🏠 Home":
         </div>
         """,unsafe_allow_html=True)
 
+
 elif page=="🔍 Single Prediction":
     st.markdown("## 🔍 Check a Single Transaction")
     st.caption("Enter transaction details below to get a fraud risk score.")
     st.markdown("<br>",unsafe_allow_html=True)
  
-    col1,col2=st.columns(2)
-    with col1:
-        amount=st.slider('💵 Transaction Amount ($)',0.0,25000.0,100.0)
-    with col2:
-        time=st.slider('⏱️ Time (seconds since first transaction)',0.0,172800.0,50000.0)
- 
-    st.markdown("#### Behavior Pattern Features")
-    st.caption("These anonymized features (V1-V28) actually drive fraud detection more than Amount/Time. Push them further from 0 to simulate riskier behavior patterns.")
- 
-    c1,c2,c3,c4,c5=st.columns(5)
-    with c1:
-        v14=st.slider('V14',-20.0,10.0,0.0)
-    with c2:
-        v4=st.slider('V4',-5.0,17.0,0.0)
-    with c3:
-        v12=st.slider('V12',-19.0,8.0,0.0)
-    with c4:
-        v10=st.slider('V10',-19.0,24.0,0.0)
-    with c5:
-        v17=st.slider('V17',-25.0,10.0,0.0)
+    st.markdown("#### Try a Real Example")
+    st.caption("Load an actual transaction from the dataset instead of guessing values — guaranteed to show correct model behavior.")
+    b1,b2,b3=st.columns(3)
+    with b1:
+        if st.button('🚨 Load Real Fraud Example',use_container_width=True):
+            st.session_state.loaded_row=samples[samples['Class']==1].sample(1).iloc[0]
+    with b2:
+        if st.button('✅ Load Real Safe Example',use_container_width=True):
+            st.session_state.loaded_row=samples[samples['Class']==0].sample(1).iloc[0]
+    with b3:
+        if st.button('🔄 Reset to Manual',use_container_width=True):
+            st.session_state.loaded_row=None
  
     st.markdown("<br>",unsafe_allow_html=True)
-    check=st.button('🚀 Check Transaction',use_container_width=True)
  
-    if check:
-        amount_scaled=scaler.transform([[amount]])[0][0]
-        time_scaled=scaler.transform([[time]])[0][0]
-        v_features=[0.0]*28
-        v_features[13]=v14   
-        v_features[3]=v4    
-        v_features[11]=v12   
-        v_features[9]=v10    
-        v_features[16]=v17   
-        input_data=np.array([v_features+[amount_scaled,time_scaled]])
+    if st.session_state.loaded_row is not None:
+        row=st.session_state.loaded_row
+        st.info(f"Loaded a real transaction from the dataset (actual label: {'Fraud' if row['Class']==1 else 'Not Fraud'}). Click Check Transaction below to see if the model agrees.")
  
-        prediction=model.predict(input_data)[0]
-        probability=model.predict_proba(input_data)[0][1]
+        if st.button('🚀 Check Transaction',use_container_width=True):
+            input_data=np.array([row.drop('Class').values],dtype=float)
+            probability=model.predict_proba(input_data)[0][1]
+            prediction=1 if probability*100>=50 else 0
+ 
+            st.markdown("<br>",unsafe_allow_html=True)
+            r1,r2=st.columns([2,1])
+            with r1:
+                if prediction==1:
+                    st.error(f"🚨 **Fraud Detected** — Risk Score: {probability*100:.2f}%")
+                else:
+                    st.success(f"✅ **Transaction Looks Safe** — Risk Score: {probability*100:.2f}%")
+                st.progress(min(int(probability*100),100))
+            with r2:
+                st.metric("Risk Score",f"{probability*100:.1f}%")
+ 
+    else:
+        col1,col2=st.columns(2)
+        with col1:
+            amount=st.slider('💵 Transaction Amount ($)',0.0,25000.0,100.0)
+        with col2:
+            time=st.slider('⏱️ Time (seconds since first transaction)',0.0,172800.0,50000.0)
+ 
+        st.markdown("#### Advanced: Behavior Pattern Features")
+        st.caption("These are the features your specific trained model relies on most (ranked by actual importance from training), not generic guesses. Push them away from 0 to simulate riskier behavior. Note: direction matters — try both positive and negative extremes.")
+ 
+        feature_values={}
+        cols=st.columns(len(top_features)) if len(top_features)>0 else [st]
+        for i,feat in enumerate(top_features):
+            with cols[i]:
+                feature_values[feat]=st.slider(feat,-20.0,20.0,0.0)
  
         st.markdown("<br>",unsafe_allow_html=True)
-        r1,r2=st.columns([2,1])
-        with r1:
-            if prediction==1:
-                st.error(f"🚨 **Fraud Detected** — Risk Score: {probability*100:.2f}%")
-            else:
-                st.success(f"✅ **Transaction Looks Safe** — Risk Score: {probability*100:.2f}%")
-            st.progress(min(int(probability*100),100))
-        with r2:
-            st.metric("Risk Score",f"{probability*100:.1f}%")
+        threshold=st.slider('🎚️ Fraud Alert Threshold (%)',1,99,50,help="Lower this to make the model flag more transactions as fraud (higher recall, more false alarms). Real fraud systems often use 20-30% instead of 50%.")
+        check=st.button('🚀 Check Transaction',use_container_width=True)
  
-# ---------------- BATCH PREDICTION ----------------
+        if check:
+            amount_scaled=scaler.transform([[amount]])[0][0]
+            time_scaled=scaler.transform([[time]])[0][0]
+            v_features=[0.0]*28
+            for feat,val in feature_values.items():
+                idx=int(feat.replace('V',''))-1   # V1 -> index 0, V14 -> index 13, etc
+                v_features[idx]=val
+            input_data=np.array([v_features+[amount_scaled,time_scaled]])
+ 
+            probability=model.predict_proba(input_data)[0][1]
+            prediction=1 if probability*100>=threshold else 0
+ 
+            st.markdown("<br>",unsafe_allow_html=True)
+            r1,r2=st.columns([2,1])
+            with r1:
+                if prediction==1:
+                    st.error(f"🚨 **Fraud Detected** — Risk Score: {probability*100:.2f}%")
+                else:
+                    st.success(f"✅ **Transaction Looks Safe** — Risk Score: {probability*100:.2f}%")
+                st.progress(min(int(probability*100),100))
+            with r2:
+                st.metric("Risk Score",f"{probability*100:.1f}%") 
 elif page=="📂 Batch Prediction":
     st.markdown("## 📂 Check Many Transactions")
     st.caption("Upload a CSV with the same columns as training data (Time, V1-V28, Amount). No 'Class' column needed.")
@@ -217,7 +246,7 @@ elif page=="📂 Batch Prediction":
             csv_download=data.to_csv(index=False).encode('utf-8')
             st.download_button("⬇️ Download Results as CSV",csv_download,"fraud_predictions.csv","text/csv",use_container_width=True)
  
-# ---------------- MODEL PERFORMANCE ----------------
+
 elif page=="📊 Model Performance":
     st.markdown("## 📊 Model Performance Comparison")
     st.caption("How each of the 6 trained models performed on the test set.")
@@ -260,7 +289,6 @@ elif page=="📊 Model Performance":
     </div>
     """,unsafe_allow_html=True)
  
-# ---------------- ABOUT ME ----------------
 elif page=="👤 About Me":
     st.markdown("## 👤 About Me")
     st.markdown("<br>",unsafe_allow_html=True)
@@ -268,15 +296,15 @@ elif page=="👤 About Me":
     col1,col2=st.columns([1,3])
     with col1:
         try:
-            st.image("images/profile.jpg",width=200)
+            st.image("profile.jpg",width=200)
         except Exception:
             st.warning("Add a photo named 'profile.jpg' to your project folder to show it here.")
     with col2:
         st.markdown("""
         <div class="card">
             <h3>Musfirah Kashan</h3>
-            <p>Aspiring Machine Learning Engineer</p>
-            <p>I build machine learning projects to practice data preprocessing, model training, and deployment through interactive apps.</p>
+            <p>Data Science Student</p>
+            <p>I'm studying data science and building a portfolio of data analysis and machine learning projects — covering everything from exploratory data analysis to full ML pipelines with deployed apps.</p>
         </div>
         """,unsafe_allow_html=True)
  
@@ -285,14 +313,19 @@ elif page=="👤 About Me":
         st.markdown("""
         <div class="card">
             <h4>🛠️ Skills</h4>
-            <p>Python, Pandas, NumPy, Scikit-learn, Streamlit, Matplotlib, Seaborn</p>
+            <p>Python, Pandas, NumPy, Scikit-learn, Streamlit, Matplotlib, Seaborn, Data Analysis, Data Visualization, Machine Learning</p>
         </div>
         """,unsafe_allow_html=True)
     with c2:
         st.markdown("""
         <div class="card">
             <h4>📁 Projects</h4>
-            <p>Student Performance Prediction (Regression)<br>Credit Card Fraud Detection (Classification)</p>
+            <p>
+            📊 Netflix Movies VS TV Shows (EDA)<br>
+            🎵 Spotify Data Analysis (EDA)<br>
+            🎓 Student Performance Prediction (Regression)<br>
+            🛡️ Credit Card Fraud Detection (Classification) — this project
+            </p>
         </div>
         """,unsafe_allow_html=True)
  
@@ -301,6 +334,6 @@ elif page=="👤 About Me":
         <h4>🔗 Connect With Me</h4>
         <p>GitHub: <a href="https://github.com/musfirah-kashan" style="color:#2575fc;">https://github.com/musfirah-kashan</a><br>
         LinkedIn: <a href="https://www.linkedin.com/in/musfirah-kashan-487aa626a/" style="color:#2575fc;">https://www.linkedin.com/in/musfirah-kashan-487aa626a/</a><br>
-        Email: your-email@example.com</p>
+        Email: musfirah22feb@gmail.com</p>
     </div>
     """,unsafe_allow_html=True)

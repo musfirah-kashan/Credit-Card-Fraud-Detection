@@ -84,6 +84,8 @@ for name,config in models.items():
     plt.title(f'Confusion Matrix - {name}')
     plt.ylabel('Actual')
     plt.xlabel('Predicted')
+    plt.tight_layout()
+    plt.savefig(f'graphs/confusion_matrices {name}', bbox_inches='tight')
     plt.show()
 
     res.append({
@@ -107,7 +109,7 @@ plt.title('F1 Score Comparison')
 plt.xticks(rotation=45)
 plt.tight_layout()
 plt.show()
- 
+
 
 best_row=res_df.sort_values(by='f1',ascending=False).iloc[0]
 print(best_row)
@@ -121,6 +123,25 @@ final_model.fit(X,y)
  
 joblib.dump(final_model,"models/best_model.pkl")
 joblib.dump(standard,"models/scaler.pkl")
+feature_names=X.columns.tolist()
+if hasattr(final_model,'feature_importances_'):
+    importance=final_model.feature_importances_
+elif hasattr(final_model,'coef_'):
+    importance=abs(final_model.coef_[0])
+else:
+    importance=[0]*len(feature_names)
+ 
+importance_df=pd.DataFrame({'feature':feature_names,'importance':importance})
+importance_df=importance_df.sort_values(by='importance',ascending=False)
+importance_df.to_csv("models/feature_importance.csv",index=False)
+print(importance_df.head(10))
+
+df['Class']=y
+fraud_samples=df[df['Class']==1].sample(5,random_state=42)
+safe_samples=df[df['Class']==0].sample(5,random_state=42)
+samples=pd.concat([fraud_samples,safe_samples])
+samples.to_csv("models/sample_transactions.csv",index=False)
+ 
 predictions=joblib.load('models/best_model.pkl').predict(X_test)
 print(predictions)
 
